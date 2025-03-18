@@ -24,6 +24,7 @@ function getTimeStamp() {
    const minuteInNum = d.getMinutes();
    const secondInNum = d.getSeconds();
    const millisecondInNum = d.getMilliseconds();
+   const time = d.getTime();
    const hour = String(hourInNum).padStart(2, '0');
    const minute = String(minuteInNum).padStart(2, '0');
    const second = String(secondInNum).padStart(2, '0');
@@ -35,6 +36,7 @@ function getTimeStamp() {
       minuteInNum: minuteInNum,
       secondInNum: secondInNum,
       millisecondInNum: millisecondInNum,
+      time: time,
       hour: hour,
       minute: minute,
       second: second,
@@ -42,12 +44,53 @@ function getTimeStamp() {
       hourandminute: hour + ":" + minute + " " + notation
    };
 }
+
+//duration calculation and formatting function
+function calculateDuration(startTime, endTime) {
+   
+   // Calculate the difference in milliseconds
+   let diffMs = endTime - startTime;
+   console.log(diffMs)
+   
+   // Handle overnight scenarios if needed
+   if (diffMs < 0) {
+      diffMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+   }
+
+   console.log(diffMs)
+   
+   // Convert to hours, minutes, seconds
+   const hours = Math.floor(diffMs / (1000 * 60 * 60));
+   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+   const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+   
+   // Format the output string with single units
+   let formattedDuration = ""
+   if (hours > 0) {
+      formattedDuration += hours + " hour ";
+   }
+   
+   if (minutes > 0) {
+      formattedDuration += minutes + " minute ";
+   }
+   
+   // Always include seconds, even if they're 0
+   formattedDuration += seconds + " second";
+   return formattedDuration.trim()}
+
+
 //helper functions end -----------------------------
+
+
+
+
+
+
 
 
 //Local Storage Function------------------------------------------
 
-function saveMood(mood, reason, starttime, duration) {
+function saveMood(mood, reason, showStartTime, startTime, ) {
    //if there is something in localstorage, get the data else start with an empty array []
    let moods = JSON.parse(localStorage.getItem('moodEntries')) || [];
 
@@ -55,9 +98,11 @@ function saveMood(mood, reason, starttime, duration) {
    moods.unshift({
       mood: mood,
       reason: reason,
-      startTime: starttime,
-      endTime: "Now",
-      duration: duration || "Now"
+      showStartTime: showStartTime,
+      showEndTime: "Now",
+      startTime: startTime,
+      endTime: undefined,
+      duration: undefined || "Now"
 
    });
 
@@ -65,13 +110,29 @@ function saveMood(mood, reason, starttime, duration) {
    localStorage.setItem('moodEntries', JSON.stringify(moods));
 };
 
+
+
+
+
+
 //update previous card function
-function updatePreviousCard(endtime) {
+function updatePreviousCard(showendtime, endtime) {
    let moods = JSON.parse(localStorage.getItem('moodEntries')) || [];
+   moods[1].showEndTime = showendtime;
+   let startTime = moods[1].startTime;
    moods[1].endTime = endtime;
+   moods[1].duration = calculateDuration(startTime, endtime);
    localStorage.setItem('moodEntries', JSON.stringify(moods));
 
 }
+
+
+
+
+
+
+
+
 
 //function to load All Mood cards from local storage
 function loadAllMoods() {
@@ -88,7 +149,7 @@ function loadAllMoods() {
                   <p>Reason: ${moodcard.reason}</p>
                </div>
                   <div>
-                     <p>${moodcard.startTime} to <span>${moodcard.endTime}</span></p>
+                     <p>${moodcard.showStartTime} to <span>${moodcard.showEndTime}</span></p>
                      <p>Duration : ${moodcard.duration} </p>
                   </div>`;
 
@@ -103,7 +164,8 @@ function loadAllMoods() {
 
 //create new mood card function. also clears the form data
 function createNewMoodCard() {
-   const startTime = getTimeStamp().hourandminute;
+   const showStartTime = getTimeStamp().hourandminute;
+   const startTime = getTimeStamp().time;
    let duration = 'Now'
 
    let reason = document.getElementById('reason');
@@ -116,7 +178,7 @@ function createNewMoodCard() {
                     <p>Reason: ${reasonValue}</p>
                 </div>
                 <div>
-                     <p>${startTime}  to <span>Now</span></p>
+                     <p>${showStartTime}  to <span>Now</span></p>
                 </div>`;
 
    //check if mood-cards-container is empty
@@ -128,31 +190,27 @@ function createNewMoodCard() {
       moodCardsContainer.insertBefore(newMoodCard, moodCardsContainer.firstChild);
    }
    //save the new card to local storage
-   saveMood(selectedMoodValue, reasonValue, startTime, 'Now')
+   saveMood(selectedMoodValue, reasonValue, showStartTime, startTime,)
 
    //update previous card:
    let upToTime;
    if (moodCardsContainer.childElementCount >= 1) {
       upToTime = moodCardsContainer.children[1].querySelector('span')
-      upToTime.innerText = startTime
+      upToTime.innerText = showStartTime
 
    }
 
-
+//duration handling before saving:
 
    let durationParaSelector = moodCardsContainer.children[1].lastChild;
    let durationPara = document.createElement('p');
    durationPara.innerHTML = `<p>Duration : ${duration} </p>`
-   console.log(durationParaSelector.childElementCount)
-
 
    if (durationParaSelector.childElementCount == 1) {
       durationParaSelector.appendChild(durationPara);
    }
 
-   console.log(startTime)
-
-   updatePreviousCard(startTime)
+   updatePreviousCard(showStartTime, startTime)
    reason.value = '';
    selectedMood.value = selectedMood.options[0].value;
 
