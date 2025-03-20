@@ -2,7 +2,7 @@
 
 A simple web application to track your daily moods, visualize trends, and gain insights into your emotional patterns.
 
-<a href="https://learn.dipasnhu.dev/daily-mood-tracker/">View Live Website</a>
+<a href="https://learn.dipanshu.dev/daily-mood-tracker/">View Live Website</a>
 
 ## Features
 
