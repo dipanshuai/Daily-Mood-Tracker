@@ -1,32 +1,49 @@
-readme blank
+# Daily Mood Tracker
 
-three section
+A simple web application to track your daily moods, visualize trends, and gain insights into your emotional patterns.
 
-header
-mood selector section
+<a href="https://learn.dipasnhu.dev/daily-mood-tracker/">View Live Website</a>
 
-mood list section
+## Features
 
-at mood select section, give only six emoji with circle view and mood name. and on click of any emoji circle, show a popup with Selected mood, enter reason, and set current mood button.
+### Core Functionality
+- **Mood Logging**: Record your mood with an emoji and reason at any time
+- **Automatic Duration Tracking**: Track how long each mood lasts
+- **Persistent Storage**: All mood data is saved in your browser's localStorage
 
+### Day View
+- **Current Date Display**: Clear date indicator at the top
+- **Mood Selection**: 6 different mood options with emojis
+- **Mood Cards**: Chronological listing of all moods for the selected day
+- **Duration Calculation**: Automatic calculation of how long each mood lasted
 
-just at the beginning of mood list section, one button saying today to show the listings of today, there will be another view other day button which will pop the calendar up to select the desired date and day. Future date will not be selected. If some date has no data, then it will show a error saying no entries registered. at the end of calendar popup, there will be a button called view your mood, and on click of that popup, it should show the mood listing of the selected date.
+### Week View
+- **Weekly Calendar**: 7-day view with mood indicators
+- **Navigation**: Previous/next week buttons
+- **Mood Visualization**: Most frequent mood shown for each day
+- **Weekly Summary**: Statistical breakdown of moods throughout the week
+- **Progress Bars**: Visual representation of mood percentages
 
-just before the mood listing, create a calculation section where it will show that, how much time was the person in specific mood... like you were happy : time, sad: total sad time, angry, total angry time and so on. 
+### Month View
+- **Monthly Calendar**: Full month grid with mood indicators
+- **Navigation**: Previous/next month buttons
+- **Quick Access**: Click any day to see detailed view
+- **Monthly Summary**: Statistical breakdown of moods throughout the month
+- **Trend Analysis**: Identify dominant moods over longer periods
 
+### Data Visualization
+- **Color-Coded Moods**: Each mood has a distinctive color
+- **Progress Bars**: Visual representation of mood percentages
+- **Emoji Indicators**: Quick visual reference for mood types
+- **Summary Statistics**: Percentage breakdown of different moods
 
+### User Experience
+- **Responsive Design**: Works on all devices and screen sizes
+- **Intuitive Navigation**: Easy switching between day, week, and month views
+- **Date Selection**: Click on any past date to view details
+- **Data Reset Option**: Ability to clear all mood data if needed
 
-
-
-
-
-
-after heading, add a line asking user to select your current mood. 
-
-In the user input popup, instead of happy, say, You are "selected Mood" now. and before input field, instead of "what's the reason" ... add Why are you "selected mood"... Enter the reason.
-
-Add a third button in mood list section, which will display none to the listing container div, show a calendar, and on each calendar date, show the most recorded/occured feeling happened on that date. if clicked on any of the date, it should bring back the listing container with listing ofthat day.
-
-
-
-
+### Additional Features
+- **Today Highlighting**: Current date is clearly marked in calendars
+- **Future Date Handling**: Future dates are properly disabled
+- **Empty State Handling**: Appropriate messages when no mood data exists
