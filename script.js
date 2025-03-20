@@ -1,1207 +1,958 @@
+// ===============================================
+// DOM ELEMENT MANAGEMENT
+// ===============================================
 
-// ===================================
-// DOM ELEMENTS
-// ===================================
-
+// Store all DOM elements in a single object for better management
 const elements = {
-   // Mood selection
-   moodCircles: document.querySelectorAll('.mood-circle'),
-   
-   // Date selection
-   todayBtn: document.getElementById('today-btn'),
-   thisWeekBtn: document.getElementById('this-week-btn'),
-   monthViewBtn: document.getElementById('month-view-btn'),
-   
-   // Week overview
-   weekOverview: document.getElementById('week-overview'),
-   weekDaysContainer: document.getElementById('week-days-container'),
-   weeklyMoodStats: document.getElementById('weekly-mood-stats'),
-   
-   // Month overview
-   monthOverview: document.getElementById('month-overview'),
-   overviewCalendarDays: document.getElementById('overview-calendar-days'),
-   overviewCalendarTitle: document.getElementById('overview-calendar-title'),
-   overviewPrevMonthBtn: document.getElementById('overview-prev-month'),
-   overviewNextMonthBtn: document.getElementById('overview-next-month'),
-   monthlyMoodStats: document.getElementById('monthly-mood-stats'),
-   
-   // Mood stats and cards
-   moodStatsGrid: document.getElementById('mood-stats-grid'),
-   moodCardsContainer: document.getElementById('mood-cards-container'),
-   
-   // Overlay and popups
-   overlay: document.getElementById('overlay'),
-   moodInputPopup: document.getElementById('mood-input-popup'),
-   calendarPopup: document.getElementById('calendar-popup'),
-   closeButtons: document.querySelectorAll('.close-btn'),
-   
-   // Mood input
-   selectedEmoji: document.getElementById('selected-emoji'),
-   selectedMoodName: document.getElementById('selected-mood-name'),
-   selectedMoodReason: document.getElementById('selected-mood-reason'),
-   reasonInput: document.getElementById('reason'),
-   submitMoodBtn: document.getElementById('submit-mood-btn'),
-   
-   // Calendar
-   calendarDays: document.getElementById('calendar-days'),
-   calendarTitle: document.getElementById('calendar-title'),
-   prevMonthBtn: document.getElementById('prev-month'),
-   nextMonthBtn: document.getElementById('next-month'),
-   viewMoodBtn: document.getElementById('view-mood-btn'),
-   
-   // Clear data
-   clearDataBtn: document.getElementById('clear-data')
+    // Navigation elements
+    navButtons: {
+        today: document.getElementById('today'),
+        weekView: document.getElementById('week-view'),
+        monthView: document.getElementById('month-view'),
+        resetData: document.getElementById('reset-button')
+    },
+    
+    // View containers
+    containers: {
+        dayView: document.getElementById('day-view-container'),
+        weekView: document.getElementById('week-view-container'),
+        monthView: document.getElementById('month-view-container'),
+        moodList: document.getElementById('mood-list-container')
+    },
+    
+    // Mood selector elements
+    moodSelector: {
+        buttons: document.querySelectorAll('.mood-button'),
+        container: document.querySelector('.mood-selector')
+    },
+    
+    // Popup elements
+    popup: {
+        overlay: document.querySelector('.popup-overlay'),
+        title: document.getElementById('popup-heading'),
+        reasonLabel: document.getElementById('ask-reason'),
+        reasonInput: document.getElementById('reason'),
+        saveButton: document.getElementById('create-card')
+    },
+    
+    // Date display
+    dateIndicator: document.getElementById('date-indicator')
 };
 
-// ===================================
-// APPLICATION STATE
-// ===================================
+// ===============================================
+// STATE MANAGEMENT
+// ===============================================
 
+// Main application state for single mood entry
 const app = {
-   selectedMood: null,
-   selectedDate: new Date(),
-   currentCalendarDate: new Date(),
-   overviewCalendarDate: new Date(),
-   selectedCalendarDay: null,
-   isWeekViewActive: false,
-   isMonthViewActive: false,
-   moodEmojis: {
-      'Happy': '😊',
-      'Sad': '😢',
-      'Angry': '😠',
-      'Stressed': '😫',
-      'Relaxed': '😌',
-      'Tired': '😴'
-   }
+    moodName: "",
+    moodEmoji: "",
+    moodReason: "",
+    moodStartTime: "",
+    moodEndTime: "",
+    moodDuration: "",
+    moodDate: "",
+    moodStartTimeInms: ""
 };
 
-// ===================================
+// Data structure for tracking current view state
+const viewState = {
+    currentView: 'day',       // Current active view (day, week, or month)
+    currentWeekStart: null,   // Starting date of currently displayed week
+    currentMonth: null,       // Currently displayed month (0-11)
+    currentYear: null,        // Currently displayed year
+    selectedDate: null        // Selected date for detailed view
+};
+
+// ===============================================
 // UTILITY FUNCTIONS
-// ===================================
+// ===============================================
 
-/**
- * Gets current timestamp and returns formatted time data
- * @returns {Object} Time information in various formats
- */
-function getTimeStamp() {
-   const d = new Date();
-   const hourInNum = d.getHours();
-   const minuteInNum = d.getMinutes();
-   const secondInNum = d.getSeconds();
-   const time = d.getTime();
-
-   // Format time values with leading zeros if needed
-   const hour = String(hourInNum).padStart(2, '0');
-   const minute = String(minuteInNum).padStart(2, '0');
-   const second = String(secondInNum).padStart(2, '0');
-   const notation = hourInNum < 12 ? "AM" : "PM";
-
-   return {
-      timestamp: d,
-      time: time,
-      hourAndMinute: `${hour}:${minute} ${notation}`,
-      hourInNum: hourInNum,
-      minuteInNum: minuteInNum,
-      secondInNum: secondInNum,
-      hour: hour,
-      minute: minute,
-      second: second,
-      notation: notation,
-      fullDate: d.toDateString()
-   };
+// Get current date and time information
+function dateTime() {
+    const d = new Date();
+    const hourInNum = d.getHours();
+    const minuteInNum = d.getMinutes();
+    const secondInNum = d.getSeconds();
+    const time = d.getTime();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const dateString = d.toISOString().split('T')[0];
+    
+    // Format time values with leading zeros if needed
+    const hour = String(hourInNum).padStart(2, '0');
+    const minute = String(minuteInNum).padStart(2, '0');
+    const second = String(secondInNum).padStart(2, '0');
+    const notation = hourInNum < 12 ? "AM" : "PM";
+    
+    // Return all date & time components
+    return {
+        dateObj: d,
+        timeStamp: time,
+        hourAndMinute: `${hour}:${minute} ${notation}`,
+        hourInNum: hourInNum,
+        minuteInNum: minuteInNum,
+        secondInNum: secondInNum,
+        hour: hour,
+        minute: minute,
+        second: second,
+        notation: notation,
+        dateString: dateString,
+        year: year,
+        month: month,
+        day: day
+    };
 }
 
-/**
- * Formats a date for display
- * @param {Date|string} date - Date to format
- * @returns {string} Formatted date string
- */
-function formatDate(date) {
-   return new Date(date).toDateString();
-}
-
-/**
- * Format time from seconds to human-readable format
- * @param {number} totalSeconds - Total seconds to format
- * @returns {string} Formatted time string
- */
-function formatTimeFromSeconds(totalSeconds) {
-   if (totalSeconds < 60) {
-      return `${totalSeconds} second${totalSeconds !== 1 ? 's' : ''}`;
-   }
-   
-   const hours = Math.floor(totalSeconds / 3600);
-   const minutes = Math.floor((totalSeconds % 3600) / 60);
-   const seconds = totalSeconds % 60;
-   
-   let formattedTime = [];
-   
-   if (hours > 0) {
-      formattedTime.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
-   }
-   
-   if (minutes > 0) {
-      formattedTime.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
-   }
-   
-   if (seconds > 0 && hours === 0) {
-      formattedTime.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
-   }
-   
-   return formattedTime.join(' ');
-}
-
-/**
- * Calculate total seconds from milliseconds
- * @param {number} milliseconds - Milliseconds to convert
- * @returns {number} Total seconds
- */
-function calculateTotalSeconds(milliseconds) {
-   return Math.floor(milliseconds / 1000);
-}
-
-/**
- * Calculates and formats duration between two timestamps
- * @param {number} startTime - Start timestamp in milliseconds
- * @param {number} endTime - End timestamp in milliseconds
- * @returns {string} Formatted duration string
- */
+// Calculate duration between two timestamps
 function calculateDuration(startTime, endTime) {
-   // Calculate the difference in milliseconds
-   let diffMs = endTime - startTime;
-
-   // Handle overnight scenarios
-   if (diffMs < 0) {
-      // Add 24 hours in milliseconds
-      diffMs += 24 * 60 * 60 * 1000;
-   }
-
-   // Calculate total seconds
-   const totalSeconds = calculateTotalSeconds(diffMs);
-   
-   // Format the time
-   return formatTimeFromSeconds(totalSeconds);
+    let diffMs = endTime - startTime;
+    if (diffMs < 0) {
+        diffMs += 24 * 60 * 60 * 1000; // Handle overnight durations
+    }
+    
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    
+    // Format duration in human-readable format
+    let formattedDuration = [];
+    if (hours > 0) {
+        formattedDuration.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+    }
+    if (minutes > 0) {
+        formattedDuration.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
+    }
+    formattedDuration.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
+    
+    return formattedDuration.join(' ');
 }
 
-/**
- * Check if two dates are on the same day
- * @param {Date|string} date1 - First date
- * @param {Date|string} date2 - Second date
- * @returns {boolean} True if same day
- */
-function isSameDay(date1, date2) {
-   const d1 = new Date(date1);
-   const d2 = new Date(date2);
-   
-   return d1.getFullYear() === d2.getFullYear() &&
-          d1.getMonth() === d2.getMonth() &&
-          d1.getDate() === d2.getDate();
+// Format date as YYYY-MM-DD
+function formatDate(date) {
+    return date.toISOString().split('T')[0];
 }
 
-/**
- * Check if a date is today
- * @param {Date|string} dateStr - Date to check
- * @returns {boolean} True if date is today
- */
-function isToday(dateStr) {
-   return isSameDay(new Date(dateStr), new Date());
+// Get array of dates for a week starting from the given date
+function getWeekDates(date) {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday (make Monday the first day)
+    const monday = new Date(date);
+    monday.setDate(diff);
+    const weekDates = [];
+    
+    // Create array of 7 date objects for the week
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(monday);
+        currentDate.setDate(monday.getDate() + i);
+        weekDates.push(currentDate);
+    }
+    
+    return weekDates;
 }
 
-/**
- * Check if a date is in the future
- * @param {Date|string} dateStr - Date to check
- * @returns {boolean} True if date is in the future
- */
-function isFutureDate(dateStr) {
-   const date = new Date(dateStr);
-   const today = new Date();
-   
-   // Set today to end of day for comparison
-   today.setHours(23, 59, 59, 999);
-   
-   return date > today;
-}
-
-/**
- * Get days in a month
- * @param {number} year - Year
- * @param {number} month - Month (0-11)
- * @returns {number} Number of days in the month
- */
+// Get number of days in a month
 function getDaysInMonth(year, month) {
-   return new Date(year, month + 1, 0).getDate();
+    return new Date(year, month + 1, 0).getDate();
 }
 
-/**
- * Get first day of month (0 = Sunday, 1 = Monday, etc.)
- * @param {number} year - Year
- * @param {number} month - Month (0-11)
- * @returns {number} Day of week (0-6)
- */
-function getFirstDayOfMonth(year, month) {
-   return new Date(year, month, 1).getDay();
+// Check if a date is in the future
+function isFutureDate(dateStr) {
+    const today = formatDate(new Date());
+    return dateStr > today;
 }
 
-/**
- * Get the start of the current week (Sunday)
- * @returns {Date} Date object for the first day of the current week
- */
-function getStartOfWeek() {
-   const today = new Date();
-   const day = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
-   const diff = today.getDate() - day;
-   return new Date(today.setDate(diff));
+// Format date to readable string
+function formatDateToReadable(date) {
+    return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
 }
 
-/**
- * Get dates for the current week (Sunday to Saturday)
- * @returns {Array} Array of date objects for the week
- */
-function getCurrentWeekDates() {
-   const startOfWeek = getStartOfWeek();
-   const weekDates = [];
-   
-   for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      weekDates.push(date);
-   }
-   
-   return weekDates;
-}
+// ===============================================
+// DATA MANAGEMENT FUNCTIONS
+// ===============================================
 
-/**
- * Format a date to show day name
- * @param {Date} date - Date to format
- * @returns {string} Day name (e.g., "Sunday")
- */
-function getDayName(date) {
-   return date.toLocaleDateString('en-US', { weekday: 'long' });
-}
-
-/**
- * Format a date to short month and day format
- * @param {Date} date - Date to format
- * @returns {string} Formatted date (e.g., "Mar 15")
- */
-function formatShortDate(date) {
-   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-// ===================================
-// STORAGE FUNCTIONS
-// ===================================
-
-/**
- * Gets all mood entries from localStorage
- * @returns {Array} Array of mood entries
- */
-function getMoodEntries() {
-   try {
-      return JSON.parse(localStorage.getItem('moodEntries')) || [];
-   } catch (error) {
-      console.error('Error retrieving mood entries from localStorage:', error);
-      return [];
-   }
-}
-
-/**
- * Saves mood entries to localStorage
- * @param {Array} entries - Mood entries to save
- */
-function saveMoodEntries(entries) {
-   try {
-      localStorage.setItem('moodEntries', JSON.stringify(entries));
-   } catch (error) {
-      console.error('Error saving mood entries to localStorage:', error);
-      alert('Failed to save your mood data. Please try again or check your browser settings.');
-   }
-}
-
-/**
- * Adds a new mood entry to storage
- * @param {string} mood - Mood name
- * @param {string} reason - Reason for the mood
- */
-function saveMood(mood, reason) {
-   const entries = getMoodEntries();
-   const timeInfo = getTimeStamp();
-
-   // Add new mood entry at the beginning of the array
-   entries.unshift({
-      mood: mood,
-      moodEmoji: app.moodEmojis[mood],
-      reason: reason,
-      startTime: timeInfo.time,
-      endTime: null,
-      showStartTime: timeInfo.hourAndMinute,
-      showEndTime: "Now",
-      duration: "Just now",
-      dateObj: new Date().toISOString(),
-      date: timeInfo.fullDate
-   });
-
-   // If there's a previous entry, update its end time and duration
-   if (entries.length > 1) {
-      entries[1].endTime = timeInfo.time;
-      entries[1].showEndTime = timeInfo.hourAndMinute;
-      entries[1].duration = calculateDuration(entries[1].startTime, entries[1].endTime);
-   }
-
-   saveMoodEntries(entries);
-}
-
-/**
- * Clears all mood data from localStorage
- */
+// Clear all mood data after confirmation
 function clearAllMoodData() {
-   const confirmation = confirm('Do you really want to clear all your mood tracking data?');
-   if (confirmation) {
-      try {
-         localStorage.removeItem('moodEntries');
-         location.reload();
-      } catch (error) {
-         console.error('Error clearing mood data:', error);
-         alert('Failed to clear your mood data. Please try again.');
-      }
-   }
+    const confirmation = confirm('Do you really want to clear all your mood tracking data?');
+    if (confirmation) {
+        try {
+            localStorage.removeItem('moodEntries');
+            location.reload();
+        } catch (error) {
+            console.error('Error clearing mood data:', error);
+            alert('Failed to clear your mood data. Please try again.');
+        }
+    }
 }
 
-// ===================================
-// UI FUNCTIONS
-// ===================================
-
-/**
- * Open the mood input popup
- * @param {string} mood - Selected mood
- * @param {string} emoji - Mood emoji
- */
-function openMoodInputPopup(mood, emoji) {
-   app.selectedMood = mood;
-   elements.selectedEmoji.textContent = emoji;
-   elements.selectedMoodName.textContent = mood;
-   elements.selectedMoodReason.textContent = mood.toLowerCase();
-   elements.reasonInput.value = '';
-   
-   elements.overlay.classList.remove('hidden');
-   elements.moodInputPopup.classList.remove('hidden');
-   elements.reasonInput.focus();
+// Retrieve mood data from localStorage
+function getMoodDataFromLocalStorage() {
+    return JSON.parse(localStorage.getItem('moodEntries')) || [];
 }
 
-/**
- * Open the calendar popup for date selection
- */
-function openCalendarPopup() {
-   elements.overlay.classList.remove('hidden');
-   elements.calendarPopup.classList.remove('hidden');
-   
-   app.currentCalendarDate = new Date();
-   renderCalendar();
+// Save mood entry to localStorage
+function saveMoodDataToLocalStorage(moodEmoji, moodName, moodReason, moodStartTime, moodEndTime, moodDuration, moodDate) {
+    let allMoodData = getMoodDataFromLocalStorage();
+
+    // Add new entry at the beginning of the array (most recent first)
+    allMoodData.unshift({
+        moodEmoji: moodEmoji,
+        moodName: moodName,
+        moodReason: moodReason,
+        moodStartTime: moodStartTime,
+        moodEndTime: moodEndTime,
+        moodDuration: moodDuration,
+        moodDate: moodDate,
+    });
+
+    localStorage.setItem('moodEntries', JSON.stringify(allMoodData));
 }
 
-/**
- * Close all popups
- */
-function closePopups() {
-   elements.overlay.classList.add('hidden');
-   elements.moodInputPopup.classList.add('hidden');
-   elements.calendarPopup.classList.add('hidden');
-   
-   app.selectedCalendarDay = null;
-   elements.viewMoodBtn.disabled = true;
+// Update all mood entries in localStorage
+function updateMoodEntries(entries) {
+    try {
+        localStorage.setItem('moodEntries', JSON.stringify(entries));
+    } catch (error) {
+        console.error('Error saving mood entries to localStorage:', error);
+        alert('Failed to save your mood data. Please try again or check your browser settings.');
+    }
 }
 
-/**
- * Creates a mood card element
- * @param {Object} moodData - Mood entry data
- * @returns {HTMLElement} Mood card element
- */
-function createMoodCard(moodData) {
-   const card = document.createElement('div');
-   card.className = 'mood-card';
-   card.setAttribute('data-timestamp', moodData.startTime);
-   
-   card.innerHTML = `
-      <div class="mood-info">
-         <div class="mood-header">
-            <span class="mood-emoji">${moodData.moodEmoji}</span>
-            <span class="mood-name">${moodData.mood}</span>
-         </div>
-         <p class="mood-reason">${moodData.reason}</p>
-      </div>
-      <div class="mood-time">
-         <div class="time-range">${moodData.showStartTime} - ${moodData.showEndTime}</div>
-         <div class="duration">${moodData.duration}</div>
-      </div>
-   `;
-   
-   return card;
+// Update previous mood card's end time and duration
+function updatePreviousCardDataInLocalStorage(endTime, duration) {
+    const entries = getMoodDataFromLocalStorage();
+
+    // Only update if there's a previous entry
+    if (entries.length >= 2) {
+        entries[1].moodEndTime = endTime;
+        entries[1].moodDuration = duration;
+        updateMoodEntries(entries);
+    }
 }
 
-/**
- * Load mood entries for a specific date
- * @param {Date|string} date - Date to load entries for
- */
-function loadMoodEntriesForDate(date) {
-   const allEntries = getMoodEntries();
-   const targetDate = new Date(date);
-   
-   // Filter entries for the selected date
-   const dateEntries = allEntries.filter(entry => 
-      isSameDay(new Date(entry.dateObj), targetDate)
-   );
-   
-   // Update the selected date
-   app.selectedDate = targetDate;
-   
-   // Hide week and month overviews if they're visible
-   if (app.isWeekViewActive) {
-      toggleWeekView();
-   }
-   
-   if (app.isMonthViewActive) {
-      toggleMonthView();
-   }
-   
-   // Clear existing content
-   elements.moodCardsContainer.innerHTML = '';
-   
-   if (dateEntries.length === 0) {
-      const noData = document.createElement('div');
-      noData.className = 'no-data';
-      noData.textContent = `No mood entries for ${formatDate(targetDate)}`;
-      elements.moodCardsContainer.appendChild(noData);
-   } else {
-      // Add each entry to the container
-      dateEntries.forEach(entry => {
-         const card = createMoodCard(entry);
-         elements.moodCardsContainer.appendChild(card);
-      });
-   }
-   
-   // Update mood stats
-   updateMoodStats(dateEntries);
+// Get mood entries for a specific date
+function getMoodEntriesForDate(targetDate) {
+    const allEntries = getMoodDataFromLocalStorage();
+    return allEntries.filter(entry => entry.moodDate === targetDate);
 }
 
-/**
- * Update mood statistics with progress bars
- * @param {Array} entries - Mood entries to analyze
- */
-function updateMoodStats(entries) {
-   elements.moodStatsGrid.innerHTML = '';
-   
-   if (entries.length === 0) {
-      elements.moodStatsGrid.innerHTML = '<div class="no-stats">No data available</div>';
-      return;
-   }
-   
-   // Calculate total time for each mood
-   const moodTimes = {};
-   let totalTrackedSeconds = 0;
-   
-   // Initialize time for all moods to 0
-   Object.keys(app.moodEmojis).forEach(mood => {
-      moodTimes[mood] = 0;
-   });
-   
-   // Calculate time for each mood
-   entries.forEach(entry => {
-      if (entry.endTime) {
-         const durationMs = entry.endTime - entry.startTime;
-         const durationSec = calculateTotalSeconds(durationMs);
-         
-         moodTimes[entry.mood] += durationSec;
-         totalTrackedSeconds += durationSec;
-      }
-   });
-   
-   // Create a stat item for each mood with data
-   Object.keys(moodTimes)
-      .filter(mood => moodTimes[mood] > 0)
-      .sort((a, b) => moodTimes[b] - moodTimes[a])
-      .forEach(mood => {
-         const statItem = document.createElement('div');
-         statItem.className = `stat-item mood-${mood}`;
-         
-         const percentage = totalTrackedSeconds > 0 
-            ? Math.round((moodTimes[mood] / totalTrackedSeconds) * 100) 
-            : 0;
-         
-         statItem.innerHTML = `
-            <div class="stat-emoji">${app.moodEmojis[mood]}</div>
-            <div class="stat-details">
-               <div class="stat-label">
-                  <span>${mood}</span>
-                  <span class="stat-percentage">${percentage}%</span>
-               </div>
-               <div class="stat-progress">
-                  <div class="stat-progress-bar" style="width: ${percentage}%"></div>
-               </div>
-               <div class="stat-time">${formatTimeFromSeconds(moodTimes[mood])}</div>
-            </div>
-         `;
-         
-         elements.moodStatsGrid.appendChild(statItem);
-      });
-   
-   // If no stats available yet (only most recent mood with no duration)
-   if (elements.moodStatsGrid.children.length === 0) {
-      const noStatsMsg = document.createElement('div');
-      noStatsMsg.className = 'no-stats';
-      noStatsMsg.textContent = 'Not enough data to calculate mood durations yet';
-      elements.moodStatsGrid.appendChild(noStatsMsg);
-   }
-}
+// ===============================================
+// MOOD ANALYSIS FUNCTIONS
+// ===============================================
 
-/**
- * Render the calendar for date selection
- */
-function renderCalendar() {
-   const year = app.currentCalendarDate.getFullYear();
-   const month = app.currentCalendarDate.getMonth();
-   const today = new Date();
-   
-   // Set calendar title
-   elements.calendarTitle.textContent = new Date(year, month, 1).toLocaleDateString('default', { 
-      month: 'long', 
-      year: 'numeric' 
-   });
-   
-   // Clear calendar days
-   elements.calendarDays.innerHTML = '';
-   
-   // Get entries with dates
-   const allEntries = getMoodEntries();
-   
-   // Get days in the month and first day of month
-   const daysInMonth = getDaysInMonth(year, month);
-   const firstDay = getFirstDayOfMonth(year, month);
-   
-   // Create empty cells for days before the first day of the month
-   for (let i = 0; i < firstDay; i++) {
-      const emptyDay = document.createElement('div');
-      emptyDay.className = 'calendar-day empty';
-      elements.calendarDays.appendChild(emptyDay);
-   }
-   
-   // Create cells for each day in the month
-   for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const dateString = date.toISOString();
-      
-      const dayCell = document.createElement('div');
-      dayCell.className = 'calendar-day';
-      dayCell.textContent = day;
-      
-      // Check if this day has entries
-      const hasEntries = allEntries.some(entry => isSameDay(new Date(entry.dateObj), date));
-      
-      // Check if this is today
-      if (isSameDay(date, today)) {
-         dayCell.classList.add('today');
-      }
-      
-      // Check if selected
-      if (app.selectedCalendarDay && isSameDay(app.selectedCalendarDay, date)) {
-         dayCell.classList.add('selected');
-      }
-      
-      // Check if future date
-      if (isFutureDate(date)) {
-         dayCell.classList.add('disabled');
-      } else {
-         // Add click event for non-future dates
-         dayCell.addEventListener('click', () => {
-            // Remove selected class from all days
-            document.querySelectorAll('.calendar-day.selected').forEach(el => {
-               el.classList.remove('selected');
-            });
-            
-            // Add selected class to clicked day
-            dayCell.classList.add('selected');
-            
-            // Update selected date
-            app.selectedCalendarDay = date;
-            
-            // Enable view button
-            elements.viewMoodBtn.disabled = false;
-         });
-      }
-      
-      // Mark days with entries
-      if (hasEntries) {
-         dayCell.classList.add('has-entry');
-      }
-      
-      elements.calendarDays.appendChild(dayCell);
-   }
-}
-
-/**
- * Submit a new mood entry
- */
-function submitMood() {
-   const mood = app.selectedMood;
-   const reason = elements.reasonInput.value.trim();
-   
-   if (!mood) {
-      alert('Please select a mood');
-      return;
-   }
-   
-   if (!reason) {
-      alert('Please enter a reason for your mood');
-      return;
-   }
-   
-   // Save the mood entry
-   saveMood(mood, reason);
-   
-   // Close the popup
-   closePopups();
-   
-   // Reload today's entries
-   loadMoodEntriesForDate(new Date());
-}
-
-/**
- * Toggle week view
- */
-function toggleWeekView() {
-   // Toggle week view state
-   app.isWeekViewActive = !app.isWeekViewActive;
-   
-   if (app.isWeekViewActive) {
-      // Close month view if it's open
-      if (app.isMonthViewActive) {
-         app.isMonthViewActive = false;
-         elements.monthOverview.classList.add('hidden');
-         elements.monthViewBtn.classList.remove('active');
-      }
-      
-      // Show week view, hide cards
-      elements.moodCardsContainer.classList.add('hidden');
-      elements.weekOverview.classList.remove('hidden');
-      elements.thisWeekBtn.classList.add('active');
-      
-      // Render the week overview
-      renderWeekOverview();
-   } else {
-      // Hide week view, show cards
-      elements.moodCardsContainer.classList.remove('hidden');
-      elements.weekOverview.classList.add('hidden');
-      elements.thisWeekBtn.classList.remove('active');
-   }
-}
-
-/**
- * Render the week overview
- */
-function renderWeekOverview() {
-   const weekDates = getCurrentWeekDates();
-   const allEntries = getMoodEntries();
-   
-   // Clear previous content
-   elements.weekDaysContainer.innerHTML = '';
-   
-   // Create day elements for each day of the week
-   weekDates.forEach(date => {
-      // Filter entries for this day
-      const dayEntries = allEntries.filter(entry => 
-         isSameDay(new Date(entry.dateObj), date)
-      );
-      
-      // Create day element
-      const dayElement = document.createElement('div');
-      dayElement.className = 'week-day';
-      
-      // Check if this day is today
-      if (isToday(date)) {
-         dayElement.classList.add('today');
-      }
-      
-      // Check if this day has entries
-      if (dayEntries.length > 0) {
-         dayElement.classList.add('has-entry');
-      }
-      
-      // Get most frequent mood for this day if there are entries
-      let dominantMood = null;
-      let dominantMoodEmoji = '';
-      
-      if (dayEntries.length > 0) {
-         dominantMood = getMostFrequentMood(dayEntries);
-         dominantMoodEmoji = app.moodEmojis[dominantMood];
-      }
-      
-      // Create day content
-      dayElement.innerHTML = `
-         <div class="week-day-name">${getDayName(date)}</div>
-         <div class="week-day-date">${formatShortDate(date)}</div>
-         <div class="week-day-mood">${dominantMoodEmoji}</div>
-      `;
-      
-      // Add click event to view this day's entries
-      dayElement.addEventListener('click', () => {
-         loadMoodEntriesForDate(date);
-      });
-      
-      elements.weekDaysContainer.appendChild(dayElement);
-   });
-   
-   // Update weekly mood summary
-   updateWeeklyMoodSummary(weekDates);
-}
-
-/**
- * Update the weekly mood summary
- * @param {Array} weekDates - Array of dates for the week
- */
-function updateWeeklyMoodSummary(weekDates) {
-   const allEntries = getMoodEntries();
-   
-   // Count the dominant moods for each day of the week
-   const moodOccurrences = {};
-   
-   // Initialize mood occurrences
-   Object.keys(app.moodEmojis).forEach(mood => {
-      moodOccurrences[mood] = {
-         count: 0,
-         days: []
-      };
-   });
-   
-   // Analyze each day of the week
-   weekDates.forEach(date => {
-      // Filter entries for this day
-      const dayEntries = allEntries.filter(entry => 
-         isSameDay(new Date(entry.dateObj), date)
-      );
-      
-      // If there are entries, get the most frequent mood
-      if (dayEntries.length > 0) {
-         const dominantMood = getMostFrequentMood(dayEntries);
-         if (dominantMood) {
-            moodOccurrences[dominantMood].count++;
-            moodOccurrences[dominantMood].days.push({
-               date: date,
-               dayName: getDayName(date)
-            });
-         }
-      }
-   });
-   
-   // Clear previous summary
-   elements.weeklyMoodStats.innerHTML = '';
-   
-   // Check if there's any mood data for the week
-   const hasData = Object.values(moodOccurrences).some(mood => mood.count > 0);
-   
-   if (!hasData) {
-      elements.weeklyMoodStats.innerHTML = '<div class="no-stats">No mood data for this week</div>';
-      return;
-   }
-   
-   // Create a summary item for each mood with occurrences
-   Object.keys(moodOccurrences)
-      .filter(mood => moodOccurrences[mood].count > 0)
-      .sort((a, b) => moodOccurrences[b].count - moodOccurrences[a].count)
-      .forEach(mood => {
-         const moodData = moodOccurrences[mood];
-         
-         const moodItem = document.createElement('div');
-         moodItem.className = 'weekly-mood-item';
-         
-         // Create day tags for each day
-         const dayTags = moodData.days.map(day => {
-            return `<span class="day-tag">${day.dayName}</span>`;
-         }).join('');
-         
-         moodItem.innerHTML = `
-            <div class="weekly-mood-emoji">${app.moodEmojis[mood]}</div>
-            <div class="weekly-mood-details">
-               <div class="weekly-mood-name">${mood} was your main mood on ${moodData.count} day${moodData.count !== 1 ? 's' : ''}</div>
-               <div class="weekly-mood-dates">${dayTags}</div>
-            </div>
-         `;
-         
-         elements.weeklyMoodStats.appendChild(moodItem);
-      });
-}
-
-/**
- * Toggle month view
- */
-function toggleMonthView() {
-   app.isMonthViewActive = !app.isMonthViewActive;
-   
-   if (app.isMonthViewActive) {
-      // Close week view if it's open
-      if (app.isWeekViewActive) {
-         app.isWeekViewActive = false;
-         elements.weekOverview.classList.add('hidden');
-         elements.thisWeekBtn.classList.remove('active');
-      }
-      
-      // Show month view, hide cards
-      elements.moodCardsContainer.classList.add('hidden');
-      elements.monthOverview.classList.remove('hidden');
-      elements.monthViewBtn.classList.add('active');
-      
-      // Render the month overview
-      renderMonthOverview();
-      updateMonthlyMoodSummary();
-   } else {
-      // Hide month view, show cards
-      elements.moodCardsContainer.classList.remove('hidden');
-      elements.monthOverview.classList.add('hidden');
-      elements.monthViewBtn.classList.remove('active');
-   }
-}
-
-/**
- * Get the most frequent mood for a day
- * @param {Array} entries - Entries to analyze
- * @returns {string|null} Most frequent mood or null if no entries
- */
+// Calculate most frequent mood from a set of entries
 function getMostFrequentMood(entries) {
-   if (entries.length === 0) return null;
-   
-   // Count occurrences of each mood
-   const moodCounts = {};
-   
-   // Initialize mood counts to zero
-   Object.keys(app.moodEmojis).forEach(mood => {
-      moodCounts[mood] = 0;
-   });
-   
-   // Count each mood occurrence
-   entries.forEach(entry => {
-      moodCounts[entry.mood]++;
-   });
-   
-   // Find the mood with the highest count
-   let mostFrequentMood = null;
-   let highestCount = 0;
-   
-   Object.keys(moodCounts).forEach(mood => {
-      if (moodCounts[mood] > highestCount) {
-         highestCount = moodCounts[mood];
-         mostFrequentMood = mood;
-      }
-   });
-   
-   return mostFrequentMood;
+    if (!entries || entries.length === 0) return null;
+    
+    // Count occurrences of each mood
+    const moodCounts = {};
+    entries.forEach(entry => {
+        const mood = entry.moodName;
+        moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+    });
+    
+    // Find the most frequent mood
+    let maxCount = 0;
+    let mostFrequentMood = null;
+    
+    for (const mood in moodCounts) {
+        if (moodCounts[mood] > maxCount) {
+            maxCount = moodCounts[mood];
+            mostFrequentMood = mood;
+        }
+    }
+    
+    // Return mood details
+    return {
+        mood: mostFrequentMood,
+        emoji: entries.find(entry => entry.moodName === mostFrequentMood).moodEmoji,
+        count: maxCount,
+        total: entries.length
+    };
 }
 
-/**
- * Render the month overview calendar
- */
-function renderMonthOverview() {
-   const year = app.overviewCalendarDate.getFullYear();
-   const month = app.overviewCalendarDate.getMonth();
-   const today = new Date();
-   
-   // Set calendar title
-   elements.overviewCalendarTitle.textContent = new Date(year, month, 1).toLocaleDateString('default', { 
-      month: 'long', 
-      year: 'numeric' 
-   });
-   
-   // Clear calendar days
-   elements.overviewCalendarDays.innerHTML = '';
-   
-   // Get entries with dates
-   const allEntries = getMoodEntries();
-   
-   // Get days in the month and first day of month
-   const daysInMonth = getDaysInMonth(year, month);
-   const firstDay = getFirstDayOfMonth(year, month);
-   
-   // Create empty cells for days before the first day of the month
-   for (let i = 0; i < firstDay; i++) {
-      const emptyDay = document.createElement('div');
-      emptyDay.className = 'overview-day empty';
-      elements.overviewCalendarDays.appendChild(emptyDay);
-   }
-   
-   // Create cells for each day in the month
-   for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      
-      const dayCell = document.createElement('div');
-      dayCell.className = 'overview-day';
-      
-      // Add day number
-      const dayNumber = document.createElement('div');
-      dayNumber.className = 'overview-day-number';
-      dayNumber.textContent = day;
-      dayCell.appendChild(dayNumber);
-      
-      // Filter entries for this day
-      const dayEntries = allEntries.filter(entry => 
-         isSameDay(new Date(entry.dateObj), date)
-      );
-      
-      // Add the most frequent mood emoji
-      const dayMood = document.createElement('div');
-      dayMood.className = 'overview-day-mood';
-      
-      if (dayEntries.length > 0) {
-         const mostFrequentMood = getMostFrequentMood(dayEntries);
-         if (mostFrequentMood) {
-            dayMood.textContent = app.moodEmojis[mostFrequentMood];
-            dayCell.classList.add('has-entry');
-            
-            // Add click event to view this day's entries
-            dayCell.addEventListener('click', () => {
-               loadMoodEntriesForDate(date);
-            });
-         }
-      }
-      
-      dayCell.appendChild(dayMood);
-      
-      // Check if this is today
-      if (isSameDay(date, today)) {
-         dayCell.classList.add('today');
-      }
-      
-      // Check if future date
-      if (isFutureDate(date)) {
-         dayCell.classList.add('future');
-         // Remove any click event
-         dayCell.replaceWith(dayCell.cloneNode(true));
-      }
-      
-      elements.overviewCalendarDays.appendChild(dayCell);
-   }
-   
-   // Update the monthly mood summary
-   updateMonthlyMoodSummary();
+// Calculate mood statistics from a set of entries
+function calculateMoodStats(entries) {
+    const moodStats = {};
+    const totalEntries = entries.length;
+    
+    // Count occurrences of each mood
+    entries.forEach(entry => {
+        const mood = entry.moodName;
+        if (!moodStats[mood]) {
+            moodStats[mood] = {
+                count: 0,
+                emoji: entry.moodEmoji,
+                percentage: 0
+            };
+        }
+        moodStats[mood].count++;
+    });
+    
+    // Calculate percentages
+    for (const mood in moodStats) {
+        moodStats[mood].percentage = Math.round((moodStats[mood].count / totalEntries) * 100);
+    }
+    
+    return moodStats;
 }
 
-/**
- * Get the days when a mood was the most frequent
- * @param {Array} entries - Entries to analyze
- * @param {number} year - Year
- * @param {number} month - Month (0-11)
- * @returns {Object} Object mapping moods to arrays of days
- */
-function getMoodMostFrequentDays(entries, year, month) {
-   const daysInMonth = getDaysInMonth(year, month);
-   const moodFrequencyByDay = {};
-   
-   // Initialize mood frequency data structure
-   Object.keys(app.moodEmojis).forEach(mood => {
-      moodFrequencyByDay[mood] = {};
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-         moodFrequencyByDay[mood][day] = 0;
-      }
-   });
-   
-   // Count mood occurrences by day
-   entries.forEach(entry => {
-      const entryDate = new Date(entry.dateObj);
-      if (entryDate.getFullYear() === year && entryDate.getMonth() === month) {
-         const day = entryDate.getDate();
-         const mood = entry.mood;
-         
-         if (mood in moodFrequencyByDay) {
-            moodFrequencyByDay[mood][day]++;
-         }
-      }
-   });
-   
-   // Find days when each mood was most frequent
-   const moodDominantDays = {};
-   
-   for (let day = 1; day <= daysInMonth; day++) {
-      let maxCount = 0;
-      let dominantMood = null;
-      
-      Object.keys(app.moodEmojis).forEach(mood => {
-         const count = moodFrequencyByDay[mood][day];
-         if (count > maxCount) {
-            maxCount = count;
-            dominantMood = mood;
-         }
-      });
-      
-      if (dominantMood && maxCount > 0) {
-         if (!moodDominantDays[dominantMood]) {
-            moodDominantDays[dominantMood] = [];
-         }
-         moodDominantDays[dominantMood].push(day);
-      }
-   }
-   
-   return moodDominantDays;
+// ===============================================
+// UI FUNCTIONS - DAY VIEW
+// ===============================================
+
+// Show mood selection popup
+function showMoodSelectionPopup(selectedMoodValue, selectedMoodEmoji) {
+    elements.popup.overlay.classList.remove('hide');
+    elements.popup.title.innerHTML = `You are ${selectedMoodValue} ${selectedMoodEmoji} Now.`;
+    elements.popup.reasonLabel.innerHTML = `Why are you feeling <b>${selectedMoodValue}</b>? Please enter the reason...`;
 }
 
-/**
- * Update the monthly mood summary
- */
-function updateMonthlyMoodSummary() {
-   const year = app.overviewCalendarDate.getFullYear();
-   const month = app.overviewCalendarDate.getMonth();
-   const allEntries = getMoodEntries();
-   
-   // Get days when each mood was dominant
-   const moodDominantDays = getMoodMostFrequentDays(allEntries, year, month);
-   
-   // Clear previous summary
-   elements.monthlyMoodStats.innerHTML = '';
-   
-   // If no data available
-   if (Object.keys(moodDominantDays).length === 0) {
-      elements.monthlyMoodStats.innerHTML = '<div class="no-stats">No mood data for this month</div>';
-      return;
-   }
-   
-   // Create a summary item for each mood
-   Object.keys(moodDominantDays)
-      .sort((a, b) => moodDominantDays[b].length - moodDominantDays[a].length)
-      .forEach(mood => {
-         const days = moodDominantDays[mood];
-         const monthName = new Date(year, month, 1).toLocaleString('default', { month: 'long' });
-         
-         const moodItem = document.createElement('div');
-         moodItem.className = 'monthly-mood-item';
-         
-         // Create date tags for each day
-         const dateTags = days.map(day => {
-            return `<span class="date-tag">${monthName} ${day}</span>`;
-         }).join('');
-         
-         moodItem.innerHTML = `
-            <div class="monthly-mood-emoji">${app.moodEmojis[mood]}</div>
-            <div class="monthly-mood-details">
-               <div class="monthly-mood-name">${mood} was your main mood on ${days.length} day${days.length !== 1 ? 's' : ''}</div>
-               <div class="monthly-mood-dates">${dateTags}</div>
+// Hide mood selection popup
+function hidePopup() {
+    elements.popup.overlay.classList.add('hide');
+}
+
+// Handle mood button selection
+function selectMood(button) {
+    // Remove selection from all buttons and add to the clicked one
+    elements.moodSelector.buttons.forEach(btn => btn.classList.remove('selected'));
+    button.classList.add('selected');
+    
+    // Store mood data in app state
+    app.moodName = button.getAttribute('data-value');
+    
+    // Extract just the emoji (first text node) without the span text
+    app.moodEmoji = button.firstChild.textContent.trim();
+    
+    // Get current time information
+    const timeData = dateTime();
+    app.moodStartTime = timeData.hourAndMinute;
+    app.moodDate = timeData.dateString;
+    app.moodStartTimeInms = timeData.timeStamp;
+    app.moodEndTime = "Now";
+    app.moodDuration = "Now";
+}
+
+// Create a new mood card from UI data
+function createMoodCardsFromUI() {
+    // Create new mood card element
+    const card = document.createElement('div');
+    
+    // Get data from app state
+    let moodEmoji = app.moodEmoji;
+    let moodName = app.moodName;
+    let selectedCurrentMood = moodName + " " + moodEmoji;
+    let moodDuration = app.moodDuration;
+    let moodStartTime = app.moodStartTime;
+    let moodEndTime = app.moodEndTime;
+    let moodReason = app.moodReason;
+    let moodDate = app.moodDate;
+    let timeInMs = app.moodStartTimeInms;
+    
+    // Set up the card
+    card.classList.add('mood-card', 'child-div-col');
+    card.setAttribute('time', timeInMs);
+    card.setAttribute('date', moodDate);
+    card.innerHTML = `
+        <div class="mood-info child-div-row">
+            <p class="mood-title"> You were ${selectedCurrentMood} for <span id='moodduration'>${moodDuration}</span> </p>
+            <p>From ${moodStartTime} to <span id="moodendtime">${moodEndTime}</span></p>
+        </div>
+        <div class="mood-reason">
+            <p>${moodReason}</p>
+        </div>
+    `;
+
+    // Add the card to the container
+    if (elements.containers.moodList.childElementCount === 0) {
+        elements.containers.moodList.appendChild(card);
+    } else {
+        elements.containers.moodList.insertBefore(card, elements.containers.moodList.firstChild);
+    }
+    
+    // Save the mood data
+    saveMoodDataToLocalStorage(moodEmoji, moodName, moodReason, moodStartTime, moodEndTime, moodDuration, moodDate);
+    
+    // Update previous card's end time and duration if it exists
+    if (elements.containers.moodList.childElementCount >= 2) {
+        let previousCard = elements.containers.moodList.children[1];
+        let moodEndTimeContainer = previousCard.querySelector('#moodendtime');
+        let moodStartTimeofPreviousCard = Number(previousCard.getAttribute('time'));
+        
+        // Update end time to current start time
+        moodEndTimeContainer.innerText = moodStartTime;
+        
+        // Calculate and update duration
+        let moodDurationOfPreviousCard = previousCard.querySelector('#moodduration');
+        const duration = calculateDuration(moodStartTimeofPreviousCard, timeInMs);
+        moodDurationOfPreviousCard.innerText = duration;
+        
+        // Update in localStorage
+        updatePreviousCardDataInLocalStorage(moodStartTime, duration);
+    }
+}
+
+// Render mood cards for a specific date
+function renderMoodCardsForDate(dateStr) {
+    // Clear existing cards
+    elements.containers.moodList.innerHTML = '';
+    
+    // Update date indicator
+    const dateObj = new Date(dateStr);
+    elements.dateIndicator.textContent = formatDateToReadable(dateObj);
+    
+    // Get entries for the selected date
+    const entries = getMoodEntriesForDate(dateStr);
+    
+    // Create cards for each entry
+    entries.forEach(entry => {
+        const card = document.createElement('div');
+        card.classList.add('mood-card', 'child-div-col');
+        card.setAttribute('date', entry.moodDate);
+        card.setAttribute('time', new Date(entry.moodDate + 'T' + entry.moodStartTime.split(' ')[0]).getTime());
+        
+        card.innerHTML = `
+            <div class="mood-info child-div-row">
+                <p class="mood-title"> You were ${entry.moodName} ${entry.moodEmoji} for <span id='moodduration'>${entry.moodDuration}</span> </p>
+                <p>From ${entry.moodStartTime} to <span id="moodendtime">${entry.moodEndTime}</span></p>
             </div>
-         `;
-         
-         elements.monthlyMoodStats.appendChild(moodItem);
-      });
+            <div class="mood-reason">
+                <p>${entry.moodReason}</p>
+            </div>
+        `;
+        
+        elements.containers.moodList.appendChild(card);
+    });
+    
+    // Update message if no entries
+    if (entries.length === 0) {
+        const noEntriesMessage = document.createElement('div');
+        noEntriesMessage.className = 'no-entries-message';
+        noEntriesMessage.textContent = 'No mood entries for this date.';
+        elements.containers.moodList.appendChild(noEntriesMessage);
+    }
 }
 
-// ===================================
-// EVENT LISTENERS
-// ===================================
+// ===============================================
+// UI SETUP & VIEW MANAGEMENT
+// ===============================================
 
-// Mood circle click
-elements.moodCircles.forEach(circle => {
-   circle.addEventListener('click', () => {
-      const mood = circle.getAttribute('data-mood');
-      const emoji = circle.querySelector('.emoji').textContent;
-      openMoodInputPopup(mood, emoji);
-   });
+// Switch between views (day, week, month)
+function showView(viewName) {
+    // Hide all views
+    elements.containers.dayView.classList.add('hide');
+    elements.containers.weekView.classList.add('hide');
+    elements.containers.monthView.classList.add('hide');
+    
+    // Show the selected view
+    if (viewName === 'day') {
+        elements.containers.dayView.classList.remove('hide');
+        elements.moodSelector.container.classList.remove('hide');
+        // If no specific date is selected, show today's entries
+        if (!viewState.selectedDate) {
+            viewState.selectedDate = formatDate(new Date());
+        }
+        renderMoodCardsForDate(viewState.selectedDate);
+    } else if (viewName === 'week') {
+        elements.containers.weekView.classList.remove('hide');
+        elements.moodSelector.container.classList.add('hide');
+        generateWeekView();
+    } else if (viewName === 'month') {
+        elements.containers.monthView.classList.remove('hide');
+        elements.moodSelector.container.classList.add('hide');
+        generateMonthView();
+    }
+    
+    // Update current view
+    viewState.currentView = viewName;
+}
+
+// Update navigation button active states
+function updateNavButtons() {
+    elements.navButtons.today.classList.remove('active');
+    elements.navButtons.weekView.classList.remove('active');
+    elements.navButtons.monthView.classList.remove('active');
+    
+    if (viewState.currentView === 'day') {
+        elements.navButtons.today.classList.add('active');
+    } else if (viewState.currentView === 'week') {
+        elements.navButtons.weekView.classList.add('active');
+    } else if (viewState.currentView === 'month') {
+        elements.navButtons.monthView.classList.add('active');
+    }
+}
+
+// ===============================================
+// WEEK VIEW GENERATION
+// ===============================================
+
+// Generate the week view calendar and summary
+function generateWeekView() {
+    elements.containers.weekView.innerHTML = '';
+    
+    // Set current week if not set
+    if (!viewState.currentWeekStart) {
+        viewState.currentWeekStart = new Date();
+    }
+    
+    const weekDates = getWeekDates(new Date(viewState.currentWeekStart));
+    
+    // Create week view header with navigation
+    const weekHeader = document.createElement('div');
+    weekHeader.className = 'week-header';
+    
+    // Previous week button
+    const prevWeekBtn = document.createElement('button');
+    prevWeekBtn.innerHTML = '&larr;';
+    prevWeekBtn.className = 'nav-arrow';
+    prevWeekBtn.addEventListener('click', () => {
+        const newStart = new Date(viewState.currentWeekStart);
+        newStart.setDate(newStart.getDate() - 7);
+        viewState.currentWeekStart = newStart;
+        generateWeekView();
+    });
+    
+    // Week range display
+    const weekRange = document.createElement('h2');
+    const startDate = weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endDate = weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    weekRange.textContent = `${startDate} - ${endDate}`;
+    
+    // Next week button
+    const nextWeekBtn = document.createElement('button');
+    nextWeekBtn.innerHTML = '&rarr;';
+    nextWeekBtn.className = 'nav-arrow';
+    nextWeekBtn.addEventListener('click', () => {
+        const newStart = new Date(viewState.currentWeekStart);
+        newStart.setDate(newStart.getDate() + 7);
+        viewState.currentWeekStart = newStart;
+        generateWeekView();
+    });
+    
+    // Add all elements to header
+    weekHeader.appendChild(prevWeekBtn);
+    weekHeader.appendChild(weekRange);
+    weekHeader.appendChild(nextWeekBtn);
+    elements.containers.weekView.appendChild(weekHeader);
+    
+    // Create week grid
+    const weekGrid = document.createElement('div');
+    weekGrid.className = 'week-grid';
+    
+    // Create day names header
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayNames.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-name';
+        dayHeader.textContent = day;
+        weekGrid.appendChild(dayHeader);
+    });
+    
+    // Create day cells with mood data
+    weekDates.forEach(date => {
+        const dateStr = formatDate(date);
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell';
+        
+        // Check if this is today
+        if (dateStr === formatDate(new Date())) {
+            dayCell.classList.add('today');
+        }
+        
+        // Check if this is a future date
+        const isFuture = isFutureDate(dateStr);
+        if (isFuture) {
+            dayCell.classList.add('future-date');
+        }
+        
+        // Day number
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = date.getDate();
+        dayCell.appendChild(dayNumber);
+        
+        // Get mood entries for this date
+        const dayEntries = getMoodEntriesForDate(dateStr);
+        
+        // Mood emoji display
+        const moodDisplay = document.createElement('div');
+        moodDisplay.className = 'day-mood-display';
+        
+        // Check if there are entries for this date
+        if (dayEntries.length > 0) {
+            const mostFrequentMood = getMostFrequentMood(dayEntries);
+            moodDisplay.innerHTML = `<span class="mood-emoji">${mostFrequentMood.emoji}</span>`;
+            dayCell.setAttribute('data-entries', dayEntries.length);
+            
+            // Make cells clickable to navigate directly to day view
+            dayCell.addEventListener('click', () => {
+                viewState.selectedDate = dateStr;
+                showView('day');
+                updateNavButtons();
+            });
+        } else {
+            moodDisplay.textContent = '—';
+            // If future date or no entries, add disabled class
+            dayCell.classList.add('disabled');
+        }
+        
+        dayCell.appendChild(moodDisplay);
+        weekGrid.appendChild(dayCell);
+    });
+    
+    elements.containers.weekView.appendChild(weekGrid);
+    
+    // Add weekly summary section
+    const weeklySummaryContainer = document.createElement('div');
+    weeklySummaryContainer.id = 'weekly-summary';
+    weeklySummaryContainer.className = 'mood-summary-container';
+    
+    // Get all entries for the current week
+    const allWeekEntries = [];
+    weekDates.forEach(date => {
+        const dateStr = formatDate(date);
+        const dayEntries = getMoodEntriesForDate(dateStr);
+        allWeekEntries.push(...dayEntries);
+    });
+    
+    // Generate summary if there are entries
+    if (allWeekEntries.length > 0) {
+        const weeklyStats = calculateMoodStats(allWeekEntries);
+        
+        const summaryTitle = document.createElement('h3');
+        summaryTitle.textContent = 'Weekly Mood Summary';
+        weeklySummaryContainer.appendChild(summaryTitle);
+        
+        const statsList = document.createElement('div');
+        statsList.className = 'stats-list';
+        
+        // Sort moods by percentage (descending)
+        const sortedMoods = Object.keys(weeklyStats).sort(
+            (a, b) => weeklyStats[b].percentage - weeklyStats[a].percentage
+        );
+        
+        // Create stats items for each mood
+        sortedMoods.forEach(mood => {
+            const moodStat = weeklyStats[mood];
+            
+            const statItem = document.createElement('div');
+            statItem.className = 'stat-item';
+            
+            const moodLabel = document.createElement('div');
+            moodLabel.className = 'mood-label';
+            moodLabel.innerHTML = `${moodStat.emoji} ${mood}`;
+            
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            
+            const progress = document.createElement('progress');
+            progress.value = moodStat.percentage;
+            progress.max = 100;
+            progress.className = `mood-progress mood-${mood.toLowerCase()}`;
+            
+            const percentage = document.createElement('span');
+            percentage.className = 'percentage';
+            percentage.textContent = `${moodStat.percentage}%`;
+            
+            progressContainer.appendChild(progress);
+            progressContainer.appendChild(percentage);
+            
+            statItem.appendChild(moodLabel);
+            statItem.appendChild(progressContainer);
+            statsList.appendChild(statItem);
+        });
+        
+        weeklySummaryContainer.appendChild(statsList);
+    } else {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.className = 'no-data-message';
+        noDataMsg.textContent = 'No mood data recorded for this week.';
+        weeklySummaryContainer.appendChild(noDataMsg);
+    }
+    
+    elements.containers.weekView.appendChild(weeklySummaryContainer);
+}
+
+// ===============================================
+// MONTH VIEW GENERATION
+// ===============================================
+
+// Generate the month view calendar and summary
+function generateMonthView() {
+    elements.containers.monthView.innerHTML = '';
+    
+    // Set current month and year if not set
+    if (viewState.currentMonth === null || viewState.currentYear === null) {
+        const today = new Date();
+        viewState.currentMonth = today.getMonth();
+        viewState.currentYear = today.getFullYear();
+    }
+    
+    // Create month view header with navigation
+    const monthHeader = document.createElement('div');
+    monthHeader.className = 'month-header';
+    
+    // Previous month button
+    const prevMonthBtn = document.createElement('button');
+    prevMonthBtn.innerHTML = '&larr;';
+    prevMonthBtn.className = 'nav-arrow';
+    prevMonthBtn.addEventListener('click', () => {
+        if (viewState.currentMonth === 0) {
+            viewState.currentMonth = 11;
+            viewState.currentYear--;
+        } else {
+            viewState.currentMonth--;
+        }
+        generateMonthView();
+    });
+    
+    // Month and year display
+    const monthTitle = document.createElement('h2');
+    monthTitle.textContent = new Date(viewState.currentYear, viewState.currentMonth, 1)
+        .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    // Next month button
+    const nextMonthBtn = document.createElement('button');
+    nextMonthBtn.innerHTML = '&rarr;';
+    nextMonthBtn.className = 'nav-arrow';
+    nextMonthBtn.addEventListener('click', () => {
+        if (viewState.currentMonth === 11) {
+            viewState.currentMonth = 0;
+            viewState.currentYear++;
+        } else {
+            viewState.currentMonth++;
+        }
+        generateMonthView();
+    });
+    
+    // Add all elements to header
+    monthHeader.appendChild(prevMonthBtn);
+    monthHeader.appendChild(monthTitle);
+    monthHeader.appendChild(nextMonthBtn);
+    elements.containers.monthView.appendChild(monthHeader);
+    
+    // Create month grid
+    const monthGrid = document.createElement('div');
+    monthGrid.className = 'month-grid';
+    
+    // Create day names header
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    dayNames.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-name';
+        dayHeader.textContent = day;
+        monthGrid.appendChild(dayHeader);
+    });
+    
+    // Determine the first day of the month and offset
+    const firstDay = new Date(viewState.currentYear, viewState.currentMonth, 1);
+    let firstDayOfWeek = firstDay.getDay() || 7; // Convert Sunday (0) to 7
+    firstDayOfWeek--; // Adjust to 0-indexed for the grid
+    
+    // Add empty cells for days before the first of the month
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'day-cell empty';
+        monthGrid.appendChild(emptyCell);
+    }
+    
+    // Add cells for days of the month
+    const daysInMonth = getDaysInMonth(viewState.currentYear, viewState.currentMonth);
+    const today = new Date();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(viewState.currentYear, viewState.currentMonth, day);
+        const dateStr = formatDate(date);
+        
+        const dayCell = document.createElement('div');
+        dayCell.className = 'day-cell';
+        
+        // Check if this is today
+        if (dateStr === formatDate(today)) {
+            dayCell.classList.add('today');
+        }
+        
+        // Check if this is a future date
+        const isFuture = isFutureDate(dateStr);
+        if (isFuture) {
+            dayCell.classList.add('future-date');
+        }
+        
+        // Day number
+        const dayNumber = document.createElement('div');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = day;
+        dayCell.appendChild(dayNumber);
+        
+        // Get mood entries for this date
+        const dayEntries = getMoodEntriesForDate(dateStr);
+        
+        // Mood emoji display
+        const moodDisplay = document.createElement('div');
+        moodDisplay.className = 'day-mood-display';
+        
+        if (dayEntries.length > 0) {
+            const mostFrequentMood = getMostFrequentMood(dayEntries);
+            moodDisplay.innerHTML = `<span class="mood-emoji">${mostFrequentMood.emoji}</span>`;
+            dayCell.setAttribute('data-entries', dayEntries.length);
+            
+            // Make cells clickable to navigate directly to day view
+            dayCell.addEventListener('click', () => {
+                viewState.selectedDate = dateStr;
+                showView('day');
+                updateNavButtons();
+            });
+        } else {
+            moodDisplay.textContent = '—';
+            // If future date or no entries, add disabled class
+            dayCell.classList.add('disabled');
+        }
+        
+        dayCell.appendChild(moodDisplay);
+        monthGrid.appendChild(dayCell);
+    }
+    
+    elements.containers.monthView.appendChild(monthGrid);
+    
+    // Add monthly summary section
+    const monthlySummaryContainer = document.createElement('div');
+    monthlySummaryContainer.id = 'monthly-summary';
+    monthlySummaryContainer.className = 'mood-summary-container';
+    
+    // Get all entries for the current month
+    let allMonthEntries = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(viewState.currentYear, viewState.currentMonth, day);
+        const dateStr = formatDate(date);
+        const dayEntries = getMoodEntriesForDate(dateStr);
+        allMonthEntries.push(...dayEntries);
+    }
+    
+    // Generate summary if there are entries
+    if (allMonthEntries.length > 0) {
+        const monthlyStats = calculateMoodStats(allMonthEntries);
+        
+        const summaryTitle = document.createElement('h3');
+        summaryTitle.textContent = 'Monthly Mood Summary';
+        monthlySummaryContainer.appendChild(summaryTitle);
+        
+        const statsList = document.createElement('div');
+        statsList.className = 'stats-list';
+        
+        // Sort moods by percentage (descending)
+        const sortedMoods = Object.keys(monthlyStats).sort(
+            (a, b) => monthlyStats[b].percentage - monthlyStats[a].percentage
+        );
+        
+        // Create stats items for each mood
+        sortedMoods.forEach(mood => {
+            const moodStat = monthlyStats[mood];
+            
+            const statItem = document.createElement('div');
+            statItem.className = 'stat-item';
+            
+            const moodLabel = document.createElement('div');
+            moodLabel.className = 'mood-label';
+            moodLabel.innerHTML = `${moodStat.emoji} ${mood}`;
+            
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            
+            const progress = document.createElement('progress');
+            progress.value = moodStat.percentage;
+            progress.max = 100;
+            progress.className = `mood-progress mood-${mood.toLowerCase()}`;
+            
+            const percentage = document.createElement('span');
+            percentage.className = 'percentage';
+            percentage.textContent = `${moodStat.percentage}%`;
+            
+            progressContainer.appendChild(progress);
+            progressContainer.appendChild(percentage);
+            
+            statItem.appendChild(moodLabel);
+            statItem.appendChild(progressContainer);
+            statsList.appendChild(statItem);
+        });
+        
+        monthlySummaryContainer.appendChild(statsList);
+    } else {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.className = 'no-data-message';
+        noDataMsg.textContent = 'No mood data recorded for this month.';
+        monthlySummaryContainer.appendChild(noDataMsg);
+    }
+    
+    elements.containers.monthView.appendChild(monthlySummaryContainer);
+}
+
+// ===============================================
+// EVENT LISTENERS & INITIALIZATION
+// ===============================================
+
+// Event listeners for mood buttons
+elements.moodSelector.buttons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectMood(button);
+        showMoodSelectionPopup(app.moodName, app.moodEmoji);
+    });
 });
 
-// Today button click
-elements.todayBtn.addEventListener('click', () => {
-   // Set button states
-   elements.todayBtn.classList.add('active');
-   elements.thisWeekBtn.classList.remove('active');
-   elements.monthViewBtn.classList.remove('active');
-   
-   loadMoodEntriesForDate(new Date());
+// Event listener for creating mood card
+elements.popup.saveButton.addEventListener('click', () => {
+    app.moodReason = elements.popup.reasonInput.value;
+    hidePopup();
+    createMoodCardsFromUI();
+    elements.popup.reasonInput.value = "";
 });
 
-// This Week button click
-elements.thisWeekBtn.addEventListener('click', () => {
-   // Set button states
-   elements.todayBtn.classList.remove('active');
-   elements.thisWeekBtn.classList.add('active');
-   elements.monthViewBtn.classList.remove('active');
-   
-   toggleWeekView();
+// Event listener for resetting data
+elements.navButtons.resetData.addEventListener('click', clearAllMoodData);
+
+// Event listeners for navigation
+elements.navButtons.today.addEventListener('click', () => {
+    // Reset to today's date
+    viewState.selectedDate = formatDate(new Date());
+    showView('day');
+    updateNavButtons();
 });
 
-// Month View button click
-elements.monthViewBtn.addEventListener('click', () => {
-   // Set button states
-   elements.todayBtn.classList.remove('active');
-   elements.thisWeekBtn.classList.remove('active');
-   elements.monthViewBtn.classList.add('active');
-   
-   toggleMonthView();
+elements.navButtons.weekView.addEventListener('click', () => {
+    // Reset week view to current week
+    viewState.currentWeekStart = new Date();
+    showView('week');
+    updateNavButtons();
 });
 
-// Close buttons
-elements.closeButtons.forEach(btn => {
-   btn.addEventListener('click', closePopups);
+elements.navButtons.monthView.addEventListener('click', () => {
+    // Reset month view to current month
+    const today = new Date();
+    viewState.currentMonth = today.getMonth();
+    viewState.currentYear = today.getFullYear();
+    showView('month');
+    updateNavButtons();
 });
 
-// Submit mood button
-elements.submitMoodBtn.addEventListener('click', submitMood);
-
-// Reason input enter key
-elements.reasonInput.addEventListener('keypress', (e) => {
-   if (e.key === 'Enter') {
-      e.preventDefault();
-      submitMood();
-   }
-});
-
-// View mood button
-elements.viewMoodBtn.addEventListener('click', () => {
-   if (app.selectedCalendarDay) {
-      loadMoodEntriesForDate(app.selectedCalendarDay);
-      closePopups();
-   }
-});
-
-// Calendar navigation
-elements.prevMonthBtn.addEventListener('click', () => {
-   const currentDate = app.currentCalendarDate;
-   app.currentCalendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-   renderCalendar();
-});
-
-elements.nextMonthBtn.addEventListener('click', () => {
-   const currentDate = app.currentCalendarDate;
-   app.currentCalendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-   renderCalendar();
-});
-
-// Month overview navigation
-elements.overviewPrevMonthBtn.addEventListener('click', () => {
-   const currentDate = app.overviewCalendarDate;
-   app.overviewCalendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-   renderMonthOverview();
-});
-
-elements.overviewNextMonthBtn.addEventListener('click', () => {
-   const currentDate = app.overviewCalendarDate;
-   app.overviewCalendarDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-   renderMonthOverview();
-});
-
-// Clear data button
-elements.clearDataBtn.addEventListener('click', clearAllMoodData);
-
-// Close popup when clicking on overlay (outside the popup)
-elements.overlay.addEventListener('click', (e) => {
-   if (e.target === elements.overlay) {
-      closePopups();
-   }
-});
-
-// ===================================
-// INITIALIZATION
-// ===================================
-
-/**
- * Initialize the application
- * Load today's entries by default
- */
+// Initialize the application on page load
 document.addEventListener('DOMContentLoaded', () => {
-   // Set today button as active by default
-   elements.todayBtn.classList.add('active');
-   
-   // Load today's mood entries
-   loadMoodEntriesForDate(new Date());
+    // Set default view to day view
+    viewState.currentView = 'day';
+    viewState.selectedDate = formatDate(new Date()); // Set today as default
+    
+    // Show today's date in the date indicator
+    elements.dateIndicator.textContent = formatDateToReadable(new Date());
+    
+    // Show the day view
+    showView('day');
+    updateNavButtons();
+    
+    // Render today's mood cards
+    renderMoodCardsForDate(viewState.selectedDate);
 });
